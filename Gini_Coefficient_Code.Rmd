@@ -1,0 +1,96 @@
+```{r}
+#functrion to graph a lorenz curve, give the gini coefficient, show the 90/50 ratio, or show the 80/20 ratio.
+inequality <- function(df, statistic = c('gini', 'fn', 'te', 'all'), graph = TRUE) {
+  
+  #gets total number of items owned by econ society
+  totitems <- sum(df[2])
+  
+  #calculates percentage owned of item for each person
+  for (item in df) {
+    df['percowned'] <- df[2]/totitems
+  }
+  
+  #sorts ownership percent in ascending order
+  ordereddf <- df[order(df$percowned),]
+  
+  #calculates how many people filled out the survey
+  totpop <- nrow(df)
+  
+  #initializes lists for total percentage of items owned and the corresponding percentage of the population that owns them
+  percownedtot <- c()
+  percpop <- c()
+  
+  #appends corresponding percents to lists above
+  for (i in seq_len(nrow(ordereddf))) {
+    percownedtot <- append(percownedtot, sum(ordereddf[1:i,'percowned']))
+    percpop <- append(percpop, i / totpop)
+  }
+  
+  #creates a dataframe to plot a lorenz curve
+  lorenz_df <- data.frame(percpop=percpop, percownedtot=percownedtot)
+  
+  if (graph == TRUE) {
+    #plots a lorenz curve and a 45 degree angle for reference
+    plot(lorenz_df, type = 'l', xlab = 'Percentage of Econ Society Members', ylab = 'Percentage of Pots and Pans Owned', main = 'How Unequal is Cookware Ownership in Econ Society?', col = 'blue', ylim = c(0,1), xlim = c(0,1))
+    lines(x = c(0,1), y = c(0,1), col = 'red')
+  }
+  
+  if (statistic == 'gini' | statistic == 'all') {
+    #initializes area list for integration using trapezoids
+    trap_list <- c()
+    
+    #calculates areas of trapezoids for integration
+    for (i in 2:totpop) {
+      trap_list <- append(trap_list, 1 / totpop * (lorenz_df$percownedtot[i] + lorenz_df$percownedtot[i - 1]) *     0.5)
+    }
+    
+    #finds approximate area of area a
+    a <- 0.5 - sum(trap_list)
+    
+    #calculates gini coefficient
+    gini_coef <- a/0.5
+    
+    cat('The Gini coefficient is', gini_coef, '.\n\n\n')
+  }
+  
+  if (statistic == 'fn' | statistic == 'all') {
+    #calculates ownership of median and top 10 percent
+    deciles <- quantile(lorenz_df$percownedtot, probs = seq(0.1,0.9,0.1), type = 1)
+    med_own <- deciles[5]
+    top_ten <- 1 - deciles[9]
+    
+    #calculates 90/50 ratio
+    ratio <- as.numeric(top_ten/med_own)
+    
+    cat('The bottom 50% of the people in Econ Society own ', med_own, ' of the pans. \n')
+    cat('The top 10% of the people in Econ Society own ', top_ten, ' of the pans. \n')
+    cat('The 90/50 ratio is ', ratio, '.\n\n\n')
+  }
+  
+  if (statistic == 'te' | statistic == 'all') {
+    #calculates ownership of the bottom 20 and top 20 percent
+    deciles <- quantile(lorenz_df$percownedtot, probs = seq(0.1,0.9,0.1), type = 1)
+    bottom_twenty <- deciles[2]
+    top_twenty <- 1 - deciles[8]
+    
+    #calculates 80/20 ratio
+    ratio <- as.numeric(top_twenty/bottom_twenty)
+    
+    cat('The bottom 20% of the people in Econ Society own ', bottom_twenty, ' of the pans. \n')
+    cat('The top 20% of the people in Econ Society own ', top_twenty, ' of the pans. \n')
+    cat('The 80/20 ratio is ', ratio, '.')
+  }
+}
+
+library(readxl)
+df <- read_excel("C:/Users/yojoe/Downloads/Economics_Society/Inequality (Responses).xlsx")
+
+#dataframe for perfect equality
+df_1 <- data.frame(col1 = c(2,2,2,2,2,2,2,2,2,2), col2 = c(1,1,1,1,1,1,1,1,1,1))
+
+#random dataframe
+df_2 <- data.frame(col1 = seq(1,53), col2 = sample(0:101,53,replace = TRUE))
+
+inequality(df, 'all', TRUE)
+```
+
